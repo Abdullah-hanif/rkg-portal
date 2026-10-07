@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { buildSlots } from "@/lib/availability";
 import { DURATIONS } from "@/lib/constants";
+import { heroImage, providerImage, serviceImage } from "@/lib/media";
 import { formatAppointment, formatHours, formatUsd, formatWindow, quote, statusLabel } from "@/lib/pricing";
 
 type ServiceOption = {
@@ -180,26 +181,37 @@ export function BookingStudio({
 
   const succeeded = (receipt?.booking ?? booking)?.payments.filter((payment) => payment.status === "SUCCEEDED") ?? [];
 
+  const portrait = (name: string) => providerImage(name);
+
   return (
     <div className="page-wrap">
-      <section>
-        <p className="eyebrow">In-home wellness</p>
-        <h1>A practitioner at your door in Atlanta.</h1>
-        <p className="lede">
-          Pick a service and a length. The price is the hourly rate times the hours. A 30% deposit moves the visit
-          from draft into the provider search. The rest is billed when the session starts.
-        </p>
-        <ul className="provider-legend">
-          {providers.map((provider) => {
-            const window = provider.availability[0];
-            return (
-              <li key={provider.id}>
-                <strong>{provider.name}</strong>
-                <span>{window ? `Every day · ${formatWindow(window.startMinute, window.endMinute)}` : provider.bio}</span>
-              </li>
-            );
-          })}
-        </ul>
+      <section className="hero reveal">
+        <div className="hero-frame">
+          <img src={heroImage.src} alt={heroImage.alt} width={1280} height={720} />
+        </div>
+        <div className="hero-copy">
+          <p className="eyebrow">In-home wellness</p>
+          <h1>A practitioner at your door in Atlanta.</h1>
+          <p className="lede">
+            Pick a service and a length. The price is the hourly rate times the hours. A 30% deposit moves the visit
+            from draft into the provider search. The rest is billed when the session starts.
+          </p>
+          <ul className="provider-legend">
+            {providers.map((provider) => {
+              const window = provider.availability[0];
+              const photo = portrait(provider.name);
+              return (
+                <li key={provider.id}>
+                  {photo ? <img src={photo.src} alt={photo.alt} width={720} height={960} /> : null}
+                  <span>
+                    <strong>{provider.name}</strong>
+                    <span>{window ? `Every day · ${formatWindow(window.startMinute, window.endMinute)}` : provider.bio}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </section>
 
       {error ? <p className="alert" role="alert">{error}</p> : null}
@@ -207,30 +219,36 @@ export function BookingStudio({
       {step === "compose" ? (
         <form className="booking-layout" onSubmit={holdTime}>
           <div className="stack">
-            <section className="panel">
+            <section className="panel reveal">
               <div className="panel-head">
                 <h2>Service</h2>
               </div>
               <div className="choice-grid">
-                {services.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className="choice"
-                    aria-pressed={item.id === service.id}
-                    onClick={() => chooseService(item.id)}
-                  >
-                    <span>
-                      <strong>{item.name}</strong>
-                      <small>{item.description}</small>
-                    </span>
-                    <span>{formatUsd(item.hourlyRateCents)}/hr</span>
-                  </button>
-                ))}
+                {services.map((item) => {
+                  const photo = serviceImage(item.name);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="choice"
+                      aria-pressed={item.id === service.id}
+                      onClick={() => chooseService(item.id)}
+                    >
+                      <span className="choice-photo">
+                        <img src={photo.src} alt={photo.alt} width={960} height={720} />
+                      </span>
+                      <span>
+                        <strong>{item.name}</strong>
+                        <small>{item.description}</small>
+                      </span>
+                      <span className="choice-price">{formatUsd(item.hourlyRateCents)}/hr</span>
+                    </button>
+                  );
+                })}
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel reveal">
               <div className="panel-head">
                 <h2>Length</h2>
                 <p>{formatUsd(service.hourlyRateCents)}/hr × {formatHours(duration)}</p>
@@ -250,7 +268,7 @@ export function BookingStudio({
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel reveal">
               <div className="panel-head">
                 <h2>Time</h2>
                 <p>Times both providers can cover are shaded. Use one of those for the accept race.</p>
@@ -286,7 +304,7 @@ export function BookingStudio({
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel reveal">
               <div className="panel-head">
                 <h2>Your details</h2>
                 <p>Filled in for the walkthrough.</p>
@@ -319,8 +337,9 @@ export function BookingStudio({
       ) : null}
 
       {step === "pay" && booking ? (
-        <div className="booking-layout">
+        <div className="booking-layout reveal">
           <section className="panel">
+            <img className="panel-photo" src={serviceImage(booking.service.name).src} alt={serviceImage(booking.service.name).alt} width={960} height={720} />
             <p className="eyebrow">Draft</p>
             <h2>The visit is held. The deposit starts the search.</h2>
             <p className="lede">
@@ -351,8 +370,9 @@ export function BookingStudio({
       ) : null}
 
       {step === "confirmed" && booking ? (
-        <div className="confirm-grid">
+        <div className="confirm-grid reveal">
           <section className="panel">
+            <img className="panel-photo" src={serviceImage(booking.service.name).src} alt={serviceImage(booking.service.name).alt} width={960} height={720} />
             <p className="eyebrow">{statusLabel(booking.status)}</p>
             <h2>Deposit captured. Providers can accept.</h2>
             <p className="lede">
@@ -413,7 +433,15 @@ function Ticket({
   onAction?: () => void;
 }) {
   return (
-    <aside className="ticket">
+    <aside className="ticket reveal">
+      <img
+        key={serviceName}
+        className="ticket-photo"
+        src={serviceImage(serviceName).src}
+        alt=""
+        width={960}
+        height={720}
+      />
       <p className="eyebrow">Due now · 30%</p>
       <p className="amount">{formatUsd(price.depositCents)}</p>
       <p>{serviceName}</p>

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { formatAppointment, formatUsd, formatWindow, statusLabel } from "@/lib/pricing";
+import { heroImage, providerImage, serviceImage } from "@/lib/media";
 
 type PaymentView = {
   id: string;
@@ -110,13 +111,16 @@ export function DispatchBoard({ initial }: { initial: BoardData }) {
 
   return (
     <div className="page-wrap">
-      <section>
-        <p className="eyebrow">Atlanta dispatch</p>
-        <h1>First accept wins.</h1>
-        <p className="lede">
-          Both providers see a visit when their hours cover it. Accepting locks the booking row. The race button fires
-          both accepts at once so you can see the loser get rejected.
-        </p>
+      <section className="dispatch-banner reveal">
+        <img src={heroImage.src} alt={heroImage.alt} width={1280} height={720} />
+        <div>
+          <p className="eyebrow">Atlanta dispatch</p>
+          <h1>First accept wins.</h1>
+          <p className="lede">
+            Both providers see a visit when their hours cover it. Accepting locks the booking row. The race button fires
+            both accepts at once so you can see the loser get rejected.
+          </p>
+        </div>
       </section>
 
       {error ? <p className="alert" role="alert">{error}</p> : null}
@@ -132,24 +136,31 @@ export function DispatchBoard({ initial }: { initial: BoardData }) {
             </div>
             {board.searching.length === 0 ? (
               <p className="empty">No visits are searching. Book one from the customer page and pay the deposit.</p>
-            ) : (
-              <div className="provider-columns">
-                {board.providers.map((provider) => {
-                  const window = provider.availability[0];
-                  const offers = board.searching.filter((booking) =>
-                    booking.offers.some((offer) => offer.providerId === provider.id && offer.status === "OFFERED"),
-                  );
-                  return (
-                    <div key={provider.id}>
-                      <div className="column-head">
+            ) : null}
+            <div className="provider-columns">
+              {board.providers.map((provider) => {
+                const window = provider.availability[0];
+                const offers = board.searching.filter((booking) =>
+                  booking.offers.some((offer) => offer.providerId === provider.id && offer.status === "OFFERED"),
+                );
+                const photo = providerImage(provider.name);
+                return (
+                  <div key={provider.id}>
+                    <div className="column-head">
+                      {photo ? <img className="portrait" src={photo.src} alt={photo.alt} width={720} height={960} /> : null}
+                      <div>
                         <h3>{provider.name}</h3>
                         <span>{window ? formatWindow(window.startMinute, window.endMinute) : provider.bio}</span>
                       </div>
+                    </div>
                       {offers.length === 0 ? <p className="empty">Nothing offered.</p> : null}
                       {offers.map((booking) => (
                         <article key={booking.id} className="offer">
                           <div className="offer-top">
-                            <strong>{booking.customer.name}</strong>
+                            <span className="offer-service">
+                              <img src={serviceImage(booking.service.name).src} alt="" width={960} height={720} />
+                              <strong>{booking.customer.name}</strong>
+                            </span>
                             <span className="chip searching">Offer</span>
                           </div>
                           <p className="meta" style={{ marginTop: 6 }}>
@@ -176,7 +187,6 @@ export function DispatchBoard({ initial }: { initial: BoardData }) {
                   );
                 })}
               </div>
-            )}
           </section>
 
           <section className="panel">
@@ -221,7 +231,7 @@ export function DispatchBoard({ initial }: { initial: BoardData }) {
           </section>
         </div>
 
-        <aside className="proof">
+        <aside className="proof reveal">
           <p className="eyebrow">Concurrency proof</p>
           <h2>Two accepts, one winner.</h2>
           <p className="fine">
@@ -270,9 +280,20 @@ export function DispatchBoard({ initial }: { initial: BoardData }) {
                 .sort((a, b) => Number(b.ok) - Number(a.ok))
                 .map((result) => (
                   <article key={result.providerName} className={result.ok ? "verdict win" : "verdict loss"}>
+                    {providerImage(result.providerName) ? (
+                      <img
+                        className="verdict-photo"
+                        src={providerImage(result.providerName)?.src}
+                        alt=""
+                        width={720}
+                        height={960}
+                      />
+                    ) : null}
+                    <div>
                     <span className="section-label">{result.ok ? "Won the lock" : "Lost the lock"}</span>
                     <strong>{result.providerName}</strong>
                     <p>{result.ok ? "This provider was assigned." : result.message}</p>
+                    </div>
                   </article>
                 ))}
             </div>

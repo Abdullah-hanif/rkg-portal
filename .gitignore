@@ -9,3 +9,4 @@ coverage
 .DS_Store
 .vercel
 .pgdata
+tsconfig.tsbuildinfo
