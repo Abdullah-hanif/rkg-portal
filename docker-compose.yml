@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rkg-postgres
+    environment:
+      POSTGRES_USER: rkg
+      POSTGRES_PASSWORD: rkg
+      POSTGRES_DB: rkg
+    ports:
+      - "5432:5432"
+    volumes:
+      - rkg_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rkg -d rkg"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  rkg_pg:

@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BookingStatus {
+  DRAFT
+  CONFIRMED_SEARCHING
+  PROVIDER_ASSIGNED
+  SERVICE_STARTED
+
+  @@map("booking_status")
+}
+
+enum PaymentType {
+  DEPOSIT
+  BALANCE
+
+  @@map("payment_type")
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+
+  @@map("payment_status")
+}
+
+enum OfferStatus {
+  OFFERED
+  ACCEPTED
+  LOST
+
+  @@map("offer_status")
+}
+
+model Service {
+  id                       String    @id @default(cuid())
+  name                     String    @unique
+  description              String
+  hourlyRateCents          Int       @map("hourly_rate_cents")
+  suggestedDurationMinutes Int       @map("suggested_duration_minutes")
+  active                   Boolean   @default(true)
+  bookings                 Booking[]
+
+  @@map("services")
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  phone     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  bookings  Booking[]
+
+  @@map("customers")
+}
+
+model Provider {
+  id           String                 @id @default(cuid())
+  name         String
+  email        String                 @unique
+  city         String                 @default("Atlanta")
+  active       Boolean                @default(true)
+  bio          String
+  createdAt    DateTime               @default(now()) @map("created_at")
+  availability ProviderAvailability[]
+  bookings     Booking[]
+  offers       DispatchOffer[]
+
+  @@map("providers")
+}
+
+model ProviderAvailability {
+  id          String   @id @default(cuid())
+  providerId  String   @map("provider_id")
+  provider    Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  dayOfWeek   Int      @map("day_of_week")
+  startMinute Int      @map("start_minute")
+  endMinute   Int      @map("end_minute")
+
+  @@index([providerId])
+  @@map("provider_availability")
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  customerId      String        @map("customer_id")
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  serviceId       String        @map("service_id")
+  service         Service       @relation(fields: [serviceId], references: [id])
+  providerId      String?       @map("provider_id")
+  provider        Provider?     @relation(fields: [providerId], references: [id])
+  city            String        @default("Atlanta")
+  status          BookingStatus @default(DRAFT)
+  scheduledStart  DateTime      @map("scheduled_start") @db.Timestamptz(3)
+  scheduledEnd    DateTime      @map("scheduled_end") @db.Timestamptz(3)
+  durationMinutes Int           @map("duration_minutes")
+  totalCents      Int           @map("total_cents")
+  depositCents    Int           @map("deposit_cents")
+  balanceCents    Int           @map("balance_cents")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  payments        Payment[]
+  offers          DispatchOffer[]
+
+  @@index([status, scheduledStart])
+  @@index([providerId, scheduledStart])
+  @@map("bookings")
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  bookingId             String        @map("booking_id")
+  booking               Booking       @relation(fields: [bookingId], references: [id])
+  type                  PaymentType
+  status                PaymentStatus @default(PENDING)
+  amountCents           Int           @map("amount_cents")
+  stripePaymentIntentId String        @unique @map("stripe_payment_intent_id")
+  stripeEventId         String        @unique @map("stripe_event_id")
+  createdAt             DateTime      @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@map("payments")
+}
+
+model WebhookEvent {
+  id          String   @id
+  type        String
+  bookingId   String?  @map("booking_id")
+  payload     Json
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@index([bookingId])
+  @@map("webhook_events")
+}
+
+model DispatchOffer {
+  id         String      @id @default(cuid())
+  bookingId  String      @map("booking_id")
+  booking    Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  providerId String      @map("provider_id")
+  provider   Provider    @relation(fields: [providerId], references: [id])
+  status     OfferStatus @default(OFFERED)
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  @@unique([bookingId, providerId])
+  @@index([providerId, status])
+  @@map("dispatch_offers")
+}
