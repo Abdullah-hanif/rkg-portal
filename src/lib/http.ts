@@ -15,7 +15,7 @@ export function apiError(error: unknown) {
       { status: 400 },
     );
   }
-
-  console.error(error);
+  // Log the error to the console
+  console.error("Error in API:", error);
   return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
 }
